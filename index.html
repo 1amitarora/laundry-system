@@ -566,11 +566,11 @@ function saveOrderFormWithVerification() {
         actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
         form.appendChild(actionField);
         
-        // Add data field - this is the key fix!
+        // Add data field
         const dataField = document.createElement('input');
         dataField.type = 'hidden';
         dataField.name = 'data';
-        dataField.value = JSON.stringify(orderData); // Just the order data, not wrapped
+        dataField.value = JSON.stringify(orderData);
         form.appendChild(dataField);
         
         // Submit form in new tab
@@ -579,9 +579,34 @@ function saveOrderFormWithVerification() {
         form.submit();
         document.body.removeChild(form);
         
-        // Show instructions to user
-        showMessage(`📝 Order submitted successfully!\n\n🔗 A new tab opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new tab\n💡 Use that Order ID for editing or invoice generation\n\n⚠️ If popup was blocked, try again or use a different save method`, 'success');
+        // Enhanced instructions with Order ID capture help
+        showMessage(`📝 Order submitted successfully!\n\n🔗 A new tab opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n\n📋 IMPORTANT: Copy the Order ID for invoice generation!\n\n💡 Steps to generate invoice:\n1. Copy the Order ID from the new tab (like LD25062812345)\n2. Click the "🆔 Set Order ID" button below\n3. Paste the Order ID\n4. Click "📄 Generate Invoice"\n\n⚠️ If popup was blocked, try again or use a different save method`, 'success');
         debugLog('✅ Form submitted in new tab - user can see result directly');
+        
+        // Auto-generate probable Order ID as backup
+        setTimeout(() => {
+            const timestamp = new Date();
+            const year = timestamp.getFullYear().toString().substr(-2);
+            const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+            const day = String(timestamp.getDate()).padStart(2, '0');
+            const time = timestamp.getTime().toString().substr(-4);
+            const probableOrderId = `LD${year}${month}${day}${time}`;
+            
+            debugLog(`💡 Estimated Order ID: ${probableOrderId}`);
+            
+            // Offer to use estimated ID
+            setTimeout(() => {
+                if (!currentOrderId) {
+                    const useEstimated = confirm(`Would you like to use the estimated Order ID for invoice generation?\n\nEstimated ID: ${probableOrderId}\n\nClick OK to use this, or Cancel to manually enter the correct ID later.`);
+                    
+                    if (useEstimated) {
+                        currentOrderId = probableOrderId;
+                        document.getElementById('editOrderId').value = probableOrderId;
+                        showMessage(`✅ Using estimated Order ID: ${probableOrderId}\n📄 You can now generate invoices!\n\n⚠️ If invoice generation fails, use the exact Order ID from the save result.`, 'success');
+                    }
+                }
+            }, 3000);
+        }, 1000);
         
         showLoading(false);
         
