@@ -36,12 +36,6 @@
             overflow-y: auto;
             margin: 20px;
             border-radius: 8px;
-            display: none; /* Hidden by default */
-        }
-
-        .debug-controls {
-            margin: 20px;
-            display: none; /* Hidden by default */
         }
 
         .header {
@@ -204,8 +198,6 @@
         .btn-warning {
             background: #ff6b35;
             color: white;
-            font-size: 18px;
-            padding: 15px 30px;
         }
 
         .btn-warning:hover {
@@ -249,7 +241,6 @@
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
-            display: none;
         }
 
         .edit-section h3 {
@@ -307,29 +298,18 @@
             font-style: italic;
         }
 
-        .status-section {
-            background: #e8f5e8;
-            border: 2px solid #4CAF50;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
+        .method-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
         }
 
-        .status-section h3 {
-            color: #2e7d2e;
+        .method-info h4 {
             margin-bottom: 10px;
-        }
-
-        .order-id-display {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #2e7d2e;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            border: 1px solid #4CAF50;
+            color: #856404;
         }
 
         @media (max-width: 768px) {
@@ -345,26 +325,6 @@
             .header h1 {
                 font-size: 2em;
             }
-            
-            .actions .btn {
-                display: block;
-                margin: 10px 0;
-            }
-        }
-
-        .debug-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #333;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            cursor: pointer;
-            font-size: 18px;
         }
     </style>
 </head>
@@ -372,28 +332,28 @@
     <div class="container">
         <div class="header">
             <h1>🧺 Laundry Management System</h1>
-            <p>Streamlined order management with automatic invoice generation</p>
+            <p>Complete CORS-proof solution with multiple save methods</p>
         </div>
 
         <div class="content">
-            <!-- Debug Console (Hidden) -->
-            <div class="form-section debug-controls">
+            <!-- Debug Console -->
+            <div class="form-section">
                 <h3>🔧 Debug Console</h3>
                 <div class="debug-panel" id="debugConsole">System initialized...</div>
                 <button type="button" class="btn btn-secondary" onclick="clearDebugConsole()">Clear Console</button>
                 <button type="button" class="btn btn-secondary" onclick="testConnectivity()">Test Connectivity</button>
-                <button type="button" class="btn btn-secondary" onclick="testFormSubmissionNewTab()">Test Form Submission</button>
             </div>
 
-            <!-- Order Status Section -->
-            <div id="statusSection" class="status-section" style="display: none;">
-                <h3>📋 Current Order Status</h3>
-                <div id="orderIdDisplay" class="order-id-display">No order created yet</div>
-                <p>Order ID will appear here after saving</p>
+            <!-- Method Information -->
+            <div class="method-info">
+                <h4>💡 Save Methods Available:</h4>
+                <p><strong>🔗 New Tab Method:</strong> Opens result in new tab - you see the response directly</p>
+                <p><strong>📋 Hidden Method:</strong> Saves silently and estimates Order ID</p>
+                <p><strong>🌐 GET Method:</strong> Uses URL parameters - very reliable</p>
             </div>
 
             <!-- Edit Section -->
-            <div id="editSection" class="edit-section">
+            <div id="editSection" class="edit-section" style="display: none;">
                 <h3>📝 Edit Existing Order</h3>
                 <div class="form-row">
                     <div class="form-group">
@@ -442,7 +402,7 @@
             <div class="form-section">
                 <h3>👕 Laundry Items</h3>
                 <div class="info-box">
-                    💡 Prices are automatically calculated based on item type and service selected
+                    💡 Prices are automatically calculated based on item type and service selected from your backend data
                 </div>
                 <div class="items-section">
                     <div id="itemsContainer">
@@ -460,8 +420,10 @@
 
             <!-- Actions Section -->
             <div class="actions">
-                <button type="button" class="btn btn-warning" onclick="saveOrder()">💾 Save Order</button>
                 <button type="button" class="btn btn-success" onclick="generateInvoice()">📄 Generate Invoice</button>
+                <button type="button" class="btn btn-warning" onclick="saveOrderFormWithVerification()">💾 Save Order (New Tab) - Recommended</button>
+                <button type="button" class="btn btn-secondary" onclick="saveOrderForm()">💾 Save Order (Hidden)</button>
+                <button type="button" class="btn btn-secondary" onclick="saveOrderGET()">💾 Save Order (GET)</button>
                 <button type="button" class="btn btn-primary" onclick="clearForm()">🗑️ Clear Form</button>
                 <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">✏️ Edit Existing Order</button>
             </div>
@@ -477,12 +439,9 @@
         </div>
     </div>
 
-    <!-- Debug Toggle Button -->
-    <button class="debug-toggle" onclick="toggleDebugConsole()" title="Toggle Debug Console">🔧</button>
-
     <script>
         // Configuration - Your Google Apps Script Web App URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxU-O-i_ROz9ZdSXzZWHQMqhmyU7_OtFnCRZK3jqvjdRdF9X1PSLfNlJyJbOGkRHkGR/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwH4xZSdmPU7vYVqbzpW-td5vBk-WPFwVSKEg7pdwAK7zNQNzy_zlls8nMb4p6rhJaH/exec';
         
         // Data variables
         let customers = [];
@@ -504,16 +463,6 @@
             document.getElementById('debugConsole').innerHTML = 'Console cleared...';
         }
 
-        function toggleDebugConsole() {
-            const debugControls = document.querySelector('.debug-controls');
-            if (debugControls.style.display === 'none' || debugControls.style.display === '') {
-                debugControls.style.display = 'block';
-                debugLog('🔧 Debug console enabled');
-            } else {
-                debugControls.style.display = 'none';
-            }
-        }
-
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
@@ -527,7 +476,7 @@
                 setDefaultDate();
                 addItem(); // Add first item row
                 showLoading(false);
-                showMessage('System ready! Start creating your order.', 'success');
+                showMessage('System ready! Select items and services to see automatic pricing.', 'success');
                 debugLog('✅ Application initialized successfully');
             } catch (error) {
                 debugLog('❌ Application initialization failed: ' + error.message);
@@ -560,7 +509,7 @@
                     pricing = data.pricing || {};
                     
                     populateCustomerDropdown();
-                    debugLog(`✅ Master data loaded: ${customers.length} customers, ${itemTypes.length} items`);
+                    debugLog(`✅ Master data loaded: ${customers.length} customers, ${itemTypes.length} items, ${Object.keys(pricing).length} pricing entries`);
                 } else {
                     throw new Error(data.error || 'Failed to load master data');
                 }
@@ -588,282 +537,219 @@
             debugLog('⚠️ Using fallback demo data');
         }
 
-        // Fixed Save Order Function (using the working method from your original HTML)
-        function saveOrder() {
-            if (!validateForm()) return;
-            
-            debugLog('📝 Using form submission with new tab verification...');
-            showLoading(true);
-            
+        // Method 1: Form Submission with New Tab (RECOMMENDED)
+function saveOrderFormWithVerification() {
+    if (!validateForm()) return;
+    
+    debugLog('📝 Using form submission with new tab verification...');
+    showLoading(true);
+    
+    try {
+        const orderData = collectOrderData();
+        const customerName = orderData.customerName;
+        const totalAmount = orderData.totalAmount;
+        
+        debugLog(`📦 Order: ${customerName}, Total: ₹${totalAmount}`);
+        debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
+        
+        // Create form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = SCRIPT_URL;
+        form.target = '_blank'; // Open in new tab
+        form.style.display = 'none';
+        
+        // Add action field
+        const actionField = document.createElement('input');
+        actionField.type = 'hidden';
+        actionField.name = 'action';
+        actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
+        form.appendChild(actionField);
+        
+        // Add data field - this is the key fix!
+        const dataField = document.createElement('input');
+        dataField.type = 'hidden';
+        dataField.name = 'data';
+        dataField.value = JSON.stringify(orderData); // Just the order data, not wrapped
+        form.appendChild(dataField);
+        
+        // Submit form in new tab
+        document.body.appendChild(form);
+        debugLog('📡 Submitting form in new tab...');
+        form.submit();
+        document.body.removeChild(form);
+        
+        // Show instructions to user
+        showMessage(`📝 Order submitted successfully!\n\n🔗 A new tab opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new tab\n💡 Use that Order ID for editing or invoice generation\n\n⚠️ If popup was blocked, try again or use a different save method`, 'success');
+        debugLog('✅ Form submitted in new tab - user can see result directly');
+        
+        showLoading(false);
+        
+    } catch (error) {
+        debugLog(`❌ Form submission error: ${error.message}`);
+        showMessage('Error submitting form: ' + error.message, 'error');
+        showLoading(false);
+    }
+}
+
+        // Method 2: Hidden Form Submission with Verification
+function saveOrderForm() {
+    if (!validateForm()) return;
+    
+    debugLog('📝 Using hidden form submission...');
+    showLoading(true);
+    
+    try {
+        const orderData = collectOrderData();
+        debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
+        
+        // Create form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = SCRIPT_URL;
+        form.target = 'response-frame-' + Date.now();
+        form.style.display = 'none';
+        
+        // Add action field
+        const actionField = document.createElement('input');
+        actionField.type = 'hidden';
+        actionField.name = 'action';
+        actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
+        form.appendChild(actionField);
+        
+        // Add data field - corrected!
+        const dataField = document.createElement('input');
+        dataField.type = 'hidden';
+        dataField.name = 'data';
+        dataField.value = JSON.stringify(orderData); // Just the order data
+        form.appendChild(dataField);
+        
+        // Create iframe to catch response
+        const iframe = document.createElement('iframe');
+        iframe.name = form.target;
+        iframe.id = form.target;
+        iframe.style.display = 'none';
+        iframe.onload = function() {
+            // Try to read the response from iframe
             try {
-                const orderData = collectOrderData();
-                const customerName = orderData.customerName;
-                const totalAmount = orderData.totalAmount;
-                
-                debugLog(`📦 Order: ${customerName}, Total: ₹${totalAmount}`);
-                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
-                
-                // Create form
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = SCRIPT_URL;
-                form.target = '_blank'; // Open in new tab
-                form.style.display = 'none';
-                
-                // Add action field
-                const actionField = document.createElement('input');
-                actionField.type = 'hidden';
-                actionField.name = 'action';
-                actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
-                form.appendChild(actionField);
-                
-                // Add data field - this is the key fix!
-                const dataField = document.createElement('input');
-                dataField.type = 'hidden';
-                dataField.name = 'data';
-                dataField.value = JSON.stringify(orderData); // Just the order data, not wrapped
-                form.appendChild(dataField);
-                
-                // Submit form in new tab
-                document.body.appendChild(form);
-                debugLog('📡 Submitting form in new tab...');
-                form.submit();
-                document.body.removeChild(form);
-                
-                // Show instructions to user
-                showMessage(`📝 Order submitted successfully!\n\n🔗 A new tab opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new tab\n💡 Use that Order ID for editing or invoice generation\n\n⚠️ If popup was blocked, try again or use a different save method`, 'success');
-                debugLog('✅ Form submitted in new tab - user can see result directly');
-                
-                // Auto-prompt for Order ID after 3 seconds
                 setTimeout(() => {
-                    const userOrderId = prompt('📋 Please copy and paste the Order ID from the new tab:\n\n(Look for "orderId":"LD25062812345" and copy just the ID part)\n\nExample: LD25062812345');
-                    
-                    if (userOrderId && userOrderId.trim()) {
-                        const cleanOrderId = userOrderId.trim().replace(/['"]/g, '');
-                        currentOrderId = cleanOrderId;
-                        updateOrderStatus(cleanOrderId);
-                        showMessage(`✅ Order ID set: ${cleanOrderId}\n📄 You can now generate invoices!`, 'success');
-                        debugLog(`✅ Order ID manually set: ${cleanOrderId}`);
-                    }
-                }, 3000);
-                
-                showLoading(false);
-                
-            } catch (error) {
-                debugLog(`❌ Form submission error: ${error.message}`);
-                showMessage('Error submitting form: ' + error.message, 'error');
-                showLoading(false);
-            }
-        }
-
-        // Alternative save methods from your working HTML
-        function saveOrderFormWithVerification() {
-            return saveOrder(); // Use the main save function
-        }
-
-        function saveOrderForm() {
-            if (!validateForm()) return;
-            
-            debugLog('📝 Using hidden form submission...');
-            showLoading(true);
-            
-            try {
-                const orderData = collectOrderData();
-                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
-                
-                // Create form
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = SCRIPT_URL;
-                form.target = 'response-frame-' + Date.now();
-                form.style.display = 'none';
-                
-                // Add action field
-                const actionField = document.createElement('input');
-                actionField.type = 'hidden';
-                actionField.name = 'action';
-                actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
-                form.appendChild(actionField);
-                
-                // Add data field - corrected!
-                const dataField = document.createElement('input');
-                dataField.type = 'hidden';
-                dataField.name = 'data';
-                dataField.value = JSON.stringify(orderData); // Just the order data
-                form.appendChild(dataField);
-                
-                // Create iframe to catch response
-                const iframe = document.createElement('iframe');
-                iframe.name = form.target;
-                iframe.id = form.target;
-                iframe.style.display = 'none';
-                iframe.onload = function() {
-                    // Try to read the response from iframe
+                    let responseText = '';
                     try {
-                        setTimeout(() => {
-                            let responseText = '';
-                            try {
-                                responseText = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
-                                debugLog(`📡 iframe response: ${responseText}`);
-                                
-                                if (responseText) {
-                                    const result = JSON.parse(responseText);
-                                    if (result.success) {
-                                        currentOrderId = result.orderId;
-                                        updateOrderStatus(result.orderId);
-                                        showMessage(`✅ Order saved successfully!\n🆔 Order ID: ${result.orderId}\n📋 Use this ID for editing or invoice generation`, 'success');
-                                        if (!isEditMode) {
-                                            document.getElementById('editOrderId').value = result.orderId;
-                                        }
-                                        debugLog(`✅ Order saved: ${result.orderId}`);
-                                    } else {
-                                        showMessage('❌ Order save failed: ' + (result.error || 'Unknown error'), 'error');
-                                    }
-                                }
-                            } catch (parseError) {
-                                debugLog(`⚠️ Could not read iframe response: ${parseError.message}`);
-                                // Fall back to estimated order ID
-                                const timestamp = new Date();
-                                const year = timestamp.getFullYear().toString().substr(-2);
-                                const month = String(timestamp.getMonth() + 1).padStart(2, '0');
-                                const day = String(timestamp.getDate()).padStart(2, '0');
-                                const time = timestamp.getTime().toString().substr(-4);
-                                const probableOrderId = `LD${year}${month}${day}${time}`;
-                                
-                                currentOrderId = probableOrderId;
-                                updateOrderStatus(probableOrderId + ' (estimated)');
-                                showMessage(`✅ Order submitted successfully!\n🆔 Estimated Order ID: ${probableOrderId}\n💡 Check your Google Sheet for the actual ID\n📋 The order should appear in your sheet within a few seconds`, 'success');
+                        responseText = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
+                        debugLog(`📡 iframe response: ${responseText}`);
+                        
+                        if (responseText) {
+                            const result = JSON.parse(responseText);
+                            if (result.success) {
+                                currentOrderId = result.orderId;
+                                showMessage(`✅ Order saved successfully!\n🆔 Order ID: ${result.orderId}\n📋 Use this ID for editing or invoice generation`, 'success');
                                 if (!isEditMode) {
-                                    document.getElementById('editOrderId').value = probableOrderId;
+                                    document.getElementById('editOrderId').value = result.orderId;
                                 }
+                                debugLog(`✅ Order saved: ${result.orderId}`);
+                            } else {
+                                showMessage('❌ Order save failed: ' + (result.error || 'Unknown error'), 'error');
                             }
-                            
-                            showLoading(false);
-                            
-                            // Clean up
-                            setTimeout(() => {
-                                if (iframe.parentNode) {
-                                    document.body.removeChild(iframe);
-                                }
-                            }, 1000);
-                            
-                        }, 2000);
-                    } catch (error) {
-                        debugLog(`❌ iframe processing error: ${error.message}`);
-                        showLoading(false);
+                        }
+                    } catch (parseError) {
+                        debugLog(`⚠️ Could not read iframe response: ${parseError.message}`);
+                        // Fall back to estimated order ID
+                        const timestamp = new Date();
+                        const year = timestamp.getFullYear().toString().substr(-2);
+                        const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+                        const day = String(timestamp.getDate()).padStart(2, '0');
+                        const time = timestamp.getTime().toString().substr(-4);
+                        const probableOrderId = `LD${year}${month}${day}${time}`;
+                        
+                        currentOrderId = probableOrderId;
+                        showMessage(`✅ Order submitted successfully!\n🆔 Estimated Order ID: ${probableOrderId}\n💡 Check your Google Sheet for the actual ID\n📋 The order should appear in your sheet within a few seconds`, 'success');
+                        if (!isEditMode) {
+                            document.getElementById('editOrderId').value = probableOrderId;
+                        }
                     }
-                };
-                
-                document.body.appendChild(iframe);
-                
-                // Submit form
-                document.body.appendChild(form);
-                debugLog('📡 Submitting form silently...');
-                form.submit();
-                
-                // Clean up form
-                setTimeout(() => {
-                    if (form.parentNode) document.body.removeChild(form);
-                }, 1000);
-                
+                    
+                    showLoading(false);
+                    
+                    // Clean up
+                    setTimeout(() => {
+                        if (iframe.parentNode) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 1000);
+                    
+                }, 2000);
             } catch (error) {
-                debugLog(`❌ Form submission error: ${error.message}`);
-                showMessage('Error submitting form: ' + error.message, 'error');
+                debugLog(`❌ iframe processing error: ${error.message}`);
                 showLoading(false);
             }
-        }
+        };
+        
+        document.body.appendChild(iframe);
+        
+        // Submit form
+        document.body.appendChild(form);
+        debugLog('📡 Submitting form silently...');
+        form.submit();
+        
+        // Clean up form
+        setTimeout(() => {
+            if (form.parentNode) document.body.removeChild(form);
+        }, 1000);
+        
+    } catch (error) {
+        debugLog(`❌ Form submission error: ${error.message}`);
+        showMessage('Error submitting form: ' + error.message, 'error');
+        showLoading(false);
+    }
+}
 
-        function saveOrderGET() {
-            if (!validateForm()) return;
-            
-            debugLog('📝 Using GET method with URL parameters...');
-            showLoading(true);
-            
-            try {
-                const orderData = collectOrderData();
-                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
-                
-                // Build URL with parameters - note: just pass orderData, not wrapped
-                const params = new URLSearchParams({
-                    action: isEditMode ? 'updateOrder' : 'saveOrder',
-                    data: JSON.stringify(orderData), // Just the order data
-                    _: Date.now()
-                });
-                
-                const saveUrl = `${SCRIPT_URL}?${params.toString()}`;
-                debugLog(`📡 GET save URL length: ${saveUrl.length}`);
-                
-                // Open in new window
-                const newWindow = window.open(saveUrl, '_blank', 'width=600,height=400,scrollbars=yes');
-                
-                if (newWindow) {
-                    showMessage(`📝 Order save request sent via GET method!\n\n🔗 New window opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new window\n💡 This method works even when other methods fail\n\n⚠️ Close the new window when you're done copying the Order ID`, 'success');
-                    debugLog('✅ GET save opened in new window');
-                } else {
-                    showMessage('❌ Could not open new window. Please disable popup blocker and try again, or use the "Hidden" method instead.', 'error');
-                    debugLog('❌ Popup blocked');
-                }
-                
-                showLoading(false);
-                
-            } catch (error) {
-                debugLog(`❌ GET save error: ${error.message}`);
-                showMessage('Error with GET save: ' + error.message, 'error');
-                showLoading(false);
-            }
-        }
 
-        // Generate Invoice Function
-        async function generateInvoice() {
-            if (!currentOrderId) {
-                showMessage('Please save the order first to generate an invoice.', 'error');
-                return;
-            }
-            
-            debugLog(`📄 Generating invoice for Order ID: ${currentOrderId}`);
-            showLoading(true);
-            
-            try {
-                const response = await fetch(SCRIPT_URL + `?action=generateInvoice&orderId=${encodeURIComponent(currentOrderId)}`);
-                const result = await response.json();
-                
-                debugLog(`📄 Invoice response: ${JSON.stringify(result)}`);
-                
-                if (result.success) {
-                    window.open(result.pdfUrl, '_blank');
-                    showMessage(`📄 Invoice generated successfully!\n🆔 Order ID: ${currentOrderId}\n🔗 PDF opened in new tab`, 'success');
-                    debugLog(`✅ Invoice generated: ${result.pdfUrl}`);
-                } else {
-                    throw new Error(result.error);
-                }
-                
-            } catch (error) {
-                debugLog(`❌ Invoice generation failed: ${error.message}`);
-                showMessage(`Error generating invoice: ${error.message}\n\nOrder ID: ${currentOrderId}`, 'error');
-            }
-            
-            showLoading(false);
+        // Method 3: GET Method using URL Parameters
+function saveOrderGET() {
+    if (!validateForm()) return;
+    
+    debugLog('📝 Using GET method with URL parameters...');
+    showLoading(true);
+    
+    try {
+        const orderData = collectOrderData();
+        debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
+        
+        // Build URL with parameters - note: just pass orderData, not wrapped
+        const params = new URLSearchParams({
+            action: isEditMode ? 'updateOrder' : 'saveOrder',
+            data: JSON.stringify(orderData), // Just the order data
+            _: Date.now()
+        });
+        
+        const saveUrl = `${SCRIPT_URL}?${params.toString()}`;
+        debugLog(`📡 GET save URL length: ${saveUrl.length}`);
+        
+        // Open in new window
+        const newWindow = window.open(saveUrl, '_blank', 'width=600,height=400,scrollbars=yes');
+        
+        if (newWindow) {
+            showMessage(`📝 Order save request sent via GET method!\n\n🔗 New window opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new window\n💡 This method works even when other methods fail\n\n⚠️ Close the new window when you're done copying the Order ID`, 'success');
+            debugLog('✅ GET save opened in new window');
+        } else {
+            showMessage('❌ Could not open new window. Please disable popup blocker and try again, or use the "Hidden" method instead.', 'error');
+            debugLog('❌ Popup blocked');
         }
+        
+        showLoading(false);
+        
+    } catch (error) {
+        debugLog(`❌ GET save error: ${error.message}`);
+        showMessage('Error with GET save: ' + error.message, 'error');
+        showLoading(false);
+    }
+}
 
-        function updateOrderStatus(orderId) {
-            const statusSection = document.getElementById('statusSection');
-            const orderIdDisplay = document.getElementById('orderIdDisplay');
-            
-            statusSection.style.display = 'block';
-            orderIdDisplay.textContent = orderId;
-            
-            // Also update the edit field for convenience
-            document.getElementById('editOrderId').value = orderId;
-        }
-
-        // Test backend connectivity with enhanced form submission test
+        // Test backend connectivity
         async function testConnectivity() {
             debugLog('🔧 Testing backend connectivity...');
-            showLoading(true);
             
             try {
-                // Test 1: Basic connectivity
-                debugLog('📡 Test 1: Basic connectivity...');
                 const response = await fetch(SCRIPT_URL + '?action=getMasterData', {
                     method: 'GET',
                     mode: 'cors'
@@ -873,162 +759,15 @@
                 if (response.ok) {
                     const data = await response.json();
                     debugLog(`✅ Data received: ${data.customers?.length} customers found`);
-                    showMessage('✅ Backend connectivity is working!', 'success');
+                    showMessage('✅ Backend connectivity is working perfectly!', 'success');
                 } else {
-                    showMessage('⚠️ Backend responded but with an error.', 'error');
-                    showLoading(false);
-                    return;
+                    showMessage('⚠️ Backend responded but with an error. Check debug console.', 'error');
                 }
-                
-                // Test 2: Form submission test
-                debugLog('📡 Test 2: Form submission test...');
-                
-                const testOrderData = {
-                    date: '2025-06-28',
-                    customerName: 'Test Customer',
-                    phoneNumber: '9999999999',
-                    comments: 'Test order submission',
-                    items: [{
-                        itemType: 'cloth',
-                        serviceType: 'washOnly',
-                        quantity: 1,
-                        price: 5,
-                        total: 5
-                    }],
-                    totalAmount: 5
-                };
-                
-                // Create test form
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = SCRIPT_URL;
-                form.target = 'test-frame-' + Date.now();
-                form.style.display = 'none';
-                
-                // Add action field
-                const actionField = document.createElement('input');
-                actionField.type = 'hidden';
-                actionField.name = 'action';
-                actionField.value = 'saveOrder';
-                form.appendChild(actionField);
-                
-                // Add data field
-                const dataField = document.createElement('input');
-                dataField.type = 'hidden';
-                dataField.name = 'data';
-                dataField.value = JSON.stringify(testOrderData);
-                form.appendChild(dataField);
-                
-                // Create iframe for test
-                const iframe = document.createElement('iframe');
-                iframe.name = form.target;
-                iframe.id = form.target;
-                iframe.style.display = 'none';
-                
-                // Set up iframe response handler
-                return new Promise((resolve, reject) => {
-                    iframe.onload = function() {
-                        setTimeout(() => {
-                            try {
-                                let responseText = '';
-                                try {
-                                    responseText = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
-                                    debugLog(`📡 Test form response: ${responseText}`);
-                                    
-                                    if (responseText) {
-                                        const result = JSON.parse(responseText);
-                                        if (result.success) {
-                                            debugLog(`✅ Test order saved with ID: ${result.orderId}`);
-                                            showMessage(`✅ Form submission test successful!\n🆔 Test Order ID: ${result.orderId}\n💡 Your backend is working correctly!`, 'success');
-                                        } else {
-                                            debugLog(`❌ Test order failed: ${result.error}`);
-                                            showMessage(`❌ Form submission test failed: ${result.error}`, 'error');
-                                        }
-                                    } else {
-                                        debugLog(`⚠️ Test response was empty - this indicates a backend issue`);
-                                        showMessage(`⚠️ Form submission test: No response from backend\n🔧 This suggests your Google Apps Script may not be deployed correctly`, 'error');
-                                    }
-                                } catch (parseError) {
-                                    debugLog(`❌ Test response parse error: ${parseError.message}`);
-                                    showMessage(`❌ Form submission test: Invalid response format\n🔧 Check your Google Apps Script deployment`, 'error');
-                                }
-                                
-                                // Clean up test elements
-                                if (iframe.parentNode) document.body.removeChild(iframe);
-                                if (form.parentNode) document.body.removeChild(form);
-                                showLoading(false);
-                                resolve();
-                                
-                            } catch (error) {
-                                debugLog(`❌ Test iframe error: ${error.message}`);
-                                showMessage(`❌ Form submission test failed: ${error.message}`, 'error');
-                                showLoading(false);
-                                reject(error);
-                            }
-                        }, 3000); // Wait 3 seconds for response
-                    };
-                    
-                    // Submit test form
-                    document.body.appendChild(iframe);
-                    document.body.appendChild(form);
-                    debugLog('📡 Submitting test form...');
-                    form.submit();
-                });
                 
             } catch (error) {
                 debugLog(`❌ Connectivity test failed: ${error.message}`);
-                showMessage('❌ Backend connectivity test failed: ' + error.message, 'error');
-                showLoading(false);
+                showMessage('❌ Backend connectivity test failed. The save methods should still work.', 'error');
             }
-        }
-
-        // Test form submission in new tab (easier to see response)
-        function testFormSubmissionNewTab() {
-            debugLog('🧪 Testing form submission in new tab...');
-            
-            const testOrderData = {
-                date: '2025-06-28',
-                customerName: 'Test Customer Form',
-                phoneNumber: '9999999999',
-                comments: 'Form submission test',
-                items: [{
-                    itemType: 'cloth',
-                    serviceType: 'washOnly',
-                    quantity: 1,
-                    price: 5,
-                    total: 5
-                }],
-                totalAmount: 5
-            };
-            
-            // Create form that opens in new tab
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = SCRIPT_URL;
-            form.target = '_blank'; // Open in new tab
-            form.style.display = 'none';
-            
-            // Add action field
-            const actionField = document.createElement('input');
-            actionField.type = 'hidden';
-            actionField.name = 'action';
-            actionField.value = 'saveOrder';
-            form.appendChild(actionField);
-            
-            // Add data field
-            const dataField = document.createElement('input');
-            dataField.type = 'hidden';
-            dataField.name = 'data';
-            dataField.value = JSON.stringify(testOrderData);
-            form.appendChild(dataField);
-            
-            // Submit form
-            document.body.appendChild(form);
-            debugLog('📡 Submitting test form in new tab...');
-            form.submit();
-            document.body.removeChild(form);
-            
-            showMessage('🧪 Test form submitted in new tab!\n\n👀 Look for the response in the new tab\n✅ You should see: {"success":true,"orderId":"LD25..."}\n❌ If you see an error, check your Google Apps Script deployment', 'success');
         }
 
         function populateCustomerDropdown() {
@@ -1129,6 +868,35 @@
             document.getElementById('totalAmount').textContent = `₹${total}`;
         }
 
+        async function generateInvoice() {
+            if (!currentOrderId) {
+                showMessage('Please save the order first and get the Order ID before generating invoice.\n\nAfter saving, copy the Order ID from the result and use it here.', 'error');
+                return;
+            }
+            
+            debugLog('📄 Generating invoice...');
+            showLoading(true);
+            
+            try {
+                const response = await fetch(SCRIPT_URL + `?action=generateInvoice&orderId=${currentOrderId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.open(result.pdfUrl, '_blank');
+                    showMessage('📄 Invoice generated successfully! Check your new tab.', 'success');
+                    debugLog(`✅ Invoice generated: ${result.pdfUrl}`);
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                debugLog(`❌ Invoice generation failed: ${error.message}`);
+                showMessage('Error generating invoice: ' + error.message + '\n\nMake sure you have the correct Order ID.', 'error');
+            }
+            
+            showLoading(false);
+        }
+
         async function loadOrderForEdit() {
             const orderId = document.getElementById('editOrderId').value.trim();
             if (!orderId) {
@@ -1147,7 +915,6 @@
                     populateFormWithOrderData(result.order);
                     currentOrderId = orderId;
                     isEditMode = true;
-                    updateOrderStatus(orderId);
                     showMessage('✅ Order loaded for editing', 'success');
                     debugLog(`✅ Order loaded: ${orderId}`);
                 } else {
@@ -1279,15 +1046,10 @@
             document.getElementById('itemsContainer').innerHTML = '';
             document.getElementById('totalAmount').textContent = '₹0';
             document.getElementById('editOrderId').value = '';
-            
-            // Reset order status
             currentOrderId = null;
             isEditMode = false;
             document.getElementById('editSection').style.display = 'none';
-            document.getElementById('statusSection').style.display = 'none';
-            
             addItem();
-            showMessage('Form cleared. Ready for new order.', 'success');
         }
 
         function showLoading(show) {
@@ -1314,21 +1076,9 @@
             messagesDiv.innerHTML = '';
             messagesDiv.appendChild(messageDiv);
             
-            // Auto-hide success messages after 5 seconds
-            if (type === 'success') {
-                setTimeout(() => {
-                    if (messageDiv.parentNode) {
-                        messageDiv.remove();
-                    }
-                }, 5000);
-            } else {
-                // Error messages stay longer
-                setTimeout(() => {
-                    if (messageDiv.parentNode) {
-                        messageDiv.remove();
-                    }
-                }, 10000);
-            }
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 10000); // Longer timeout for detailed messages
         }
 
         // Auto-add new customer to the list
@@ -1340,7 +1090,6 @@
                 document.getElementById('customerName').value = newCustomer;
                 this.value = '';
                 showMessage(`✅ New customer "${newCustomer}" added!`, 'success');
-                debugLog(`➕ New customer added: ${newCustomer}`);
             }
         });
 
