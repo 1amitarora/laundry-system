@@ -604,12 +604,17 @@
 
         // Debug logging
         function debugLog(message) {
-            const debugConsole = document.getElementById('debugConsole');
-            const timestamp = new Date().toLocaleTimeString();
-            debugConsole.innerHTML += `\n[${timestamp}] ${message}`;
-            debugConsole.scrollTop = debugConsole.scrollHeight;
-            console.log('[DEBUG]', message);
-        }
+    const debugConsole = document.getElementById('debugConsole');
+    const timestamp = new Date().toLocaleTimeString();
+    debugConsole.innerHTML += `\n[${timestamp}] ${message}`;
+    debugConsole.scrollTop = debugConsole.scrollHeight;
+    console.log('[DEBUG]', message);
+    
+    // Also log errors to console for better debugging
+    if (message.includes('❌') || message.includes('Error')) {
+        console.error('[ERROR]', message);
+    }
+}
 
         function clearDebugConsole() {
             document.getElementById('debugConsole').innerHTML = 'Console cleared...';
@@ -676,44 +681,75 @@
 
         // Generate Invoice with Modal ID
         async function generateInvoiceWithId() {
-            const orderId = document.getElementById('invoiceOrderId').value.trim();
-            
-            if (!orderId) {
-                showMessage('Please enter an Order ID', 'error');
-                return;
-            }
-            
-            // Validate Order ID format
-            if (!orderId.startsWith('LD') || orderId.length < 10) {
-                showMessage('Invalid Order ID format. Order ID should start with "LD" and be longer than 10 characters.\n\nExample: LD25062812345', 'error');
-                return;
-            }
-            
-            closeInvoiceModal();
-            currentOrderId = orderId; // Set the current order ID
-            
-            debugLog(`📄 Generating invoice for Order ID: ${orderId}`);
-            showLoading(true);
-            
-            try {
-                const response = await fetch(SCRIPT_URL + `?action=generateInvoice&orderId=${encodeURIComponent(orderId)}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    window.open(result.pdfUrl, '_blank');
-                    showMessage(`📄 Invoice generated successfully!\n🆔 Order ID: ${orderId}\n🔗 PDF opened in new tab`, 'success');
-                    debugLog(`✅ Invoice generated: ${result.pdfUrl}`);
-                } else {
-                    throw new Error(result.error);
-                }
-                
-            } catch (error) {
-                debugLog(`❌ Invoice generation failed: ${error.message}`);
-                showMessage(`Error generating invoice: ${error.message}\n\nOrder ID used: ${orderId}\n\n💡 Make sure the Order ID exists in your Google Sheet`, 'error');
-            }
-            
-            showLoading(false);
+    const orderId = document.getElementById('invoiceOrderId').value.trim();
+    
+    if (!orderId) {
+        showMessage('Please enter an Order ID', 'error');
+        return;
+    }
+    
+    // Enhanced Order ID validation
+    if (!orderId.startsWith('LD') || orderId.length < 10) {
+        showMessage('Invalid Order ID format. Order ID should start with "LD" and be longer than 10 characters.\n\nExample: LD25062812345', 'error');
+        return;
+    }
+    
+    closeInvoiceModal();
+    currentOrderId = orderId;
+    
+    debugLog(`📄 Generating invoice for Order ID: ${orderId}`);
+    showLoading(true);
+    
+    try {
+        // Add timeout to the request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const response = await fetch(SCRIPT_URL + `?action=generateInvoice&orderId=${encodeURIComponent(orderId)}`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        
+        const result = await response.json();
+        debugLog(`📄 Invoice response: ${JSON.stringify(result)}`);
+        
+        if (result.success) {
+            // Open the PDF in a new tab
+            window.open(result.pdfUrl, '_blank');
+            
+            showMessage(`📄 Invoice generated successfully!\n🆔 Order ID: ${orderId}\n🔗 PDF opened in new tab\n💾 PDF URL: ${result.pdfUrl}`, 'success');
+            debugLog(`✅ Invoice generated: ${result.pdfUrl}`);
+        } else {
+            throw new Error(result.error || 'Unknown error occurred');
+        }
+        
+    } catch (error) {
+        debugLog(`❌ Invoice generation failed: ${error.message}`);
+        
+        let errorMessage = `Error generating invoice: ${error.message}\n\nOrder ID used: ${orderId}`;
+        
+        if (error.name === 'AbortError') {
+            errorMessage += '\n\n⏰ Request timed out. The server might be busy. Please try again.';
+        } else if (error.message.includes('HTTP 403')) {
+            errorMessage += '\n\n🔐 Permission error. Please check if your Google Apps Script is deployed correctly.';
+        } else if (error.message.includes('HTTP 404')) {
+            errorMessage += '\n\n🔗 Script not found. Please check your SCRIPT_URL.';
+        } else if (error.message.includes('Order not found')) {
+            errorMessage += '\n\n📋 Make sure the Order ID exists in your Google Sheet.';
+        } else {
+            errorMessage += '\n\n💡 Possible solutions:\n- Check if the Order ID exists in your Google Sheet\n- Verify your Google Apps Script permissions\n- Try again in a few moments';
+        }
+        
+        showMessage(errorMessage, 'error');
+    }
+    
+    showLoading(false);
+}
 
         // Load Order for Edit with Modal ID
         async function loadOrderForEditWithId() {
