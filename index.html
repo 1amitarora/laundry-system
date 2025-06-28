@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laundry Management System - Debug Mode</title>
+    <title>Laundry Management System</title>
     <style>
         * {
             margin: 0;
@@ -309,7 +309,7 @@
     <div class="container">
         <div class="header">
             <h1>🧺 Laundry Management System</h1>
-            <p>Advanced Debug Mode - Manage your laundry orders efficiently</p>
+            <p>Manage your laundry orders efficiently</p>
         </div>
 
         <div class="content">
@@ -319,7 +319,7 @@
                 <div class="debug-panel" id="debugConsole">System initialized...</div>
                 <button type="button" class="btn btn-secondary" onclick="clearDebugConsole()">Clear Console</button>
                 <button type="button" class="btn btn-secondary" onclick="testConnectivity()">Test Connectivity</button>
-                <button type="button" class="btn btn-secondary" onclick="testCORSWithJSONP()">Try JSONP Method</button>
+                <button type="button" class="btn btn-secondary" onclick="quickJSONPTest()">Quick JSONP Test</button>
             </div>
 
             <!-- Edit Section -->
@@ -391,11 +391,10 @@
             <!-- Actions Section -->
             <div class="actions">
                 <button type="button" class="btn btn-success" onclick="generateInvoice()">📄 Generate Invoice</button>
-                <button type="button" class="btn btn-secondary" onclick="saveOrder()">💾 Save Order (Fetch)</button>
-                <button type="button" class="btn btn-secondary" onclick="saveOrderAlternative()">💾 Save Order (JSONP)</button>
+                <button type="button" class="btn btn-secondary" onclick="saveOrderForm()">💾 Save Order (Form Method)</button>
+                <button type="button" class="btn btn-secondary" onclick="saveOrderJSONP()">💾 Save Order (JSONP)</button>
                 <button type="button" class="btn btn-primary" onclick="clearForm()">🗑️ Clear Form</button>
                 <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">✏️ Edit Existing Order</button>
-                <button type="button" class="btn btn-secondary" onclick="quickJSONPTest()">🔧 Quick JSONP Test</button>
             </div>
 
             <!-- Loading Section -->
@@ -409,8 +408,6 @@
         </div>
     </div>
 
-
-    
     <script>
         // Configuration - Replace with your Google Apps Script Web App URL
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxU-O-i_ROz9ZdSXzZWHQMqhmyU7_OtFnCRZK3jqvjdRdF9X1PSLfNlJyJbOGkRHkGR/exec';
@@ -489,30 +486,259 @@
             } catch (error) {
                 debugLog(`❌ Master data loading failed: ${error.message}`);
                 console.error('Error loading master data:', error);
-                // Fallback data for testing
-                itemTypes = ['cloth', 'Bedsheet_Single', 'Bedsheet_Double', 'Towel', 'Curtains', 'Blanket', 'Sweater', 'Jacket'];
-                pricing = {
-                    'cloth': {washOnly: 5, washPress: 15, pressOnly: 10},
-                    'Bedsheet_Single': {washOnly: 5, washPress: 15, pressOnly: 10},
-                    'Bedsheet_Double': {washOnly: 5, washPress: 15, pressOnly: 10},
-                    'Towel': {washOnly: 5, washPress: 15, pressOnly: 10},
-                    'Curtains': {washOnly: 5, washPress: 15, pressOnly: 10},
-                    'Blanket': {washOnly: 5, washPress: 15, pressOnly: 10},
-                    'Sweater': {washOnly: 5, washPress: 15, pressOnly: 10},
-                    'Jacket': {washOnly: 5, washPress: 15, pressOnly: 10}
-                };
-                customers = ['Achyuta', 'Alok', 'Anamol', 'Anish', 'Anjaiah'];
-                populateCustomerDropdown();
-                showMessage('Using demo data. Please configure backend properly.', 'error');
-                debugLog('⚠️ Using fallback demo data');
+                // Use fallback data
+                loadFallbackData();
             }
         }
 
+        function loadFallbackData() {
+            itemTypes = ['cloth', 'Bedsheet_Single', 'Bedsheet_Double', 'Towel', 'Curtains', 'Blanket', 'Sweater', 'Jacket'];
+            pricing = {
+                'cloth': {washOnly: 5, washPress: 15, pressOnly: 10},
+                'Bedsheet_Single': {washOnly: 5, washPress: 15, pressOnly: 10},
+                'Bedsheet_Double': {washOnly: 5, washPress: 15, pressOnly: 10},
+                'Towel': {washOnly: 5, washPress: 15, pressOnly: 10},
+                'Curtains': {washOnly: 5, washPress: 15, pressOnly: 10},
+                'Blanket': {washOnly: 5, washPress: 15, pressOnly: 10},
+                'Sweater': {washOnly: 5, washPress: 15, pressOnly: 10},
+                'Jacket': {washOnly: 5, washPress: 15, pressOnly: 10}
+            };
+            customers = ['Achyuta', 'Alok', 'Anamol', 'Anish', 'Anjaiah'];
+            populateCustomerDropdown();
+            showMessage('Using demo data. Backend connection issue.', 'error');
+            debugLog('⚠️ Using fallback demo data');
+        }
+
+        // Quick JSONP Test
+        function quickJSONPTest() {
+            debugLog('🔧 Testing simple JSONP...');
+            
+            // Create simple callback
+            window.testCallback = function(result) {
+                debugLog('✅ JSONP SUCCESS: ' + JSON.stringify(result).substring(0, 100));
+                showMessage('✅ JSONP works! Now try the JSONP save method.', 'success');
+                delete window.testCallback;
+            };
+            
+            // Create script
+            const script = document.createElement('script');
+            script.src = SCRIPT_URL + '?action=getMasterData&callback=testCallback&_=' + Date.now();
+            script.onerror = () => {
+                debugLog('❌ JSONP script failed to load');
+                showMessage('❌ JSONP failed. Use Form method instead.', 'error');
+                delete window.testCallback;
+            };
+            
+            document.head.appendChild(script);
+            
+            setTimeout(() => {
+                if (window.testCallback) {
+                    debugLog('⏰ JSONP timeout');
+                    showMessage('⏰ JSONP timeout. Use Form method instead.', 'error');
+                    delete window.testCallback;
+                }
+                if (script.parentNode) {
+                    document.head.removeChild(script);
+                }
+            }, 5000);
+        }
+
+        // Form Submission Save Method (CORS-free)
+        function saveOrderForm() {
+            if (!validateForm()) return;
+            
+            debugLog('📝 Using form submission method (CORS-free)...');
+            showLoading(true);
+            
+            try {
+                const orderData = collectOrderData();
+                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
+                
+                // Create form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = SCRIPT_URL;
+                form.target = 'response-frame';
+                form.style.display = 'none';
+                
+                // Add action field
+                const actionField = document.createElement('input');
+                actionField.type = 'hidden';
+                actionField.name = 'action';
+                actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
+                form.appendChild(actionField);
+                
+                // Add data field
+                const dataField = document.createElement('input');
+                dataField.type = 'hidden';
+                dataField.name = 'data';
+                dataField.value = JSON.stringify(orderData);
+                form.appendChild(dataField);
+                
+                // Create or get response iframe
+                let iframe = document.getElementById('response-frame');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.name = 'response-frame';
+                    iframe.id = 'response-frame';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
+                
+                // Handle response
+                iframe.onload = () => {
+                    setTimeout(() => {
+                        try {
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            const response = iframeDoc.body.textContent || iframeDoc.body.innerText;
+                            
+                            debugLog(`📡 Form response: ${response}`);
+                            
+                            if (response.trim()) {
+                                const result = JSON.parse(response);
+                                
+                                if (result.success) {
+                                    currentOrderId = result.orderId;
+                                    showMessage(`✅ Order ${isEditMode ? 'updated' : 'saved'} successfully!\n🆔 Order ID: ${currentOrderId}\n💡 Use this ID to edit the order later`, 'success');
+                                    if (!isEditMode) {
+                                        document.getElementById('editOrderId').value = currentOrderId;
+                                    }
+                                    debugLog(`✅ Form save successful: ${currentOrderId}`);
+                                } else {
+                                    throw new Error(result.error || 'Unknown error from server');
+                                }
+                            } else {
+                                throw new Error('Empty response from server');
+                            }
+                        } catch (parseError) {
+                            debugLog(`❌ Form response parsing error: ${parseError.message}`);
+                            showMessage('Error processing server response: ' + parseError.message, 'error');
+                        }
+                        
+                        showLoading(false);
+                    }, 1000); // Wait for iframe to fully load
+                };
+                
+                // Submit form
+                document.body.appendChild(form);
+                debugLog('📡 Submitting form to bypass CORS...');
+                form.submit();
+                
+                // Clean up form after submission
+                setTimeout(() => {
+                    if (form.parentNode) {
+                        document.body.removeChild(form);
+                    }
+                }, 2000);
+                
+                // Timeout fallback
+                setTimeout(() => {
+                    if (document.getElementById('loading').style.display !== 'none') {
+                        debugLog('⏰ Form submission timeout');
+                        showMessage('Request timeout. Please try again.', 'error');
+                        showLoading(false);
+                    }
+                }, 15000);
+                
+            } catch (error) {
+                debugLog(`❌ Form submission setup error: ${error.message}`);
+                showMessage('Error setting up request: ' + error.message, 'error');
+                showLoading(false);
+            }
+        }
+
+        // JSONP Save Method (Alternative)
+        function saveOrderJSONP() {
+            if (!validateForm()) return;
+            
+            debugLog('🔄 Starting JSONP save method...');
+            showLoading(true);
+            
+            try {
+                const orderData = collectOrderData();
+                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
+                
+                const callbackName = 'saveOrder_' + Date.now();
+                
+                // Create callback function
+                window[callbackName] = function(result) {
+                    debugLog(`📡 JSONP save response: ${JSON.stringify(result)}`);
+                    
+                    if (result.success) {
+                        currentOrderId = result.orderId;
+                        showMessage(`✅ Order saved successfully via JSONP!\n🆔 Order ID: ${currentOrderId}\n💡 Use this ID to edit the order later`, 'success');
+                        if (!isEditMode) {
+                            document.getElementById('editOrderId').value = currentOrderId;
+                        }
+                        debugLog(`✅ JSONP save successful: ${currentOrderId}`);
+                    } else {
+                        showMessage('❌ JSONP save failed: ' + result.error, 'error');
+                        debugLog(`❌ JSONP save failed: ${result.error}`);
+                    }
+                    
+                    // Cleanup
+                    delete window[callbackName];
+                    const script = document.getElementById(callbackName);
+                    if (script && script.parentNode) {
+                        document.head.removeChild(script);
+                    }
+                    showLoading(false);
+                };
+                
+                // Create script element
+                const script = document.createElement('script');
+                script.id = callbackName;
+                script.onerror = function() {
+                    debugLog('❌ JSONP save script loading failed');
+                    showMessage('❌ JSONP save failed. Use Form method instead.', 'error');
+                    delete window[callbackName];
+                    if (script.parentNode) {
+                        document.head.removeChild(script);
+                    }
+                    showLoading(false);
+                };
+                
+                // Build URL with parameters
+                const params = new URLSearchParams({
+                    action: isEditMode ? 'updateOrder' : 'saveOrder',
+                    data: JSON.stringify(orderData),
+                    callback: callbackName,
+                    _: Date.now() // Cache buster
+                });
+                
+                script.src = `${SCRIPT_URL}?${params.toString()}`;
+                debugLog(`📡 JSONP save URL: ${script.src.substring(0, 200)}...`);
+                
+                // Add script to head
+                document.head.appendChild(script);
+                
+                // Timeout cleanup
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        debugLog('⏰ JSONP save timeout');
+                        showMessage('⏰ JSONP timeout. Try Form method instead.', 'error');
+                        delete window[callbackName];
+                        const script = document.getElementById(callbackName);
+                        if (script && script.parentNode) {
+                            document.head.removeChild(script);
+                        }
+                        showLoading(false);
+                    }
+                }, 30000);
+                
+            } catch (error) {
+                debugLog(`❌ JSONP save method error: ${error.message}`);
+                showMessage('❌ JSONP save method error: ' + error.message, 'error');
+                showLoading(false);
+            }
+        }
+
+        // Test backend connectivity
         async function testConnectivity() {
             debugLog('🔧 Testing backend connectivity...');
             
             try {
-                // Test 1: Basic connection
+                // Test 1: Basic GET
                 debugLog('Test 1: Basic GET request...');
                 const basicResponse = await fetch(SCRIPT_URL, { 
                     method: 'GET',
@@ -556,9 +782,7 @@
                 const postResponse = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(testPostData)
                 });
                 
@@ -571,111 +795,13 @@
                 } else {
                     const errorText = await postResponse.text();
                     debugLog(`❌ POST failed: ${errorText}`);
-                    showMessage('❌ POST test failed: ' + errorText, 'error');
+                    showMessage('❌ POST test failed, but Form method should work!', 'error');
                 }
                 
             } catch (error) {
                 debugLog(`❌ Connectivity test failed: ${error.message}`);
-                showMessage('❌ Connectivity test failed: ' + error.message, 'error');
+                showMessage('❌ Regular connectivity failed. Use Form method!', 'error');
             }
-        }
-
-        // Alternative save method using JSONP
-        async function saveOrderAlternative() {
-            if (!validateForm()) return;
-            
-            debugLog('🔄 Trying alternative JSONP save method...');
-            showLoading(true);
-            
-            try {
-                const orderData = collectOrderData();
-                
-                // Create JSONP request
-                const callbackName = 'saveCallback_' + Date.now();
-                const script = document.createElement('script');
-                
-                // Set up callback
-                window[callbackName] = function(result) {
-                    debugLog(`📡 JSONP response: ${JSON.stringify(result)}`);
-                    
-                    if (result.success) {
-                        currentOrderId = result.orderId;
-                        showMessage(`✅ Order saved successfully via JSONP!\n🆔 Order ID: ${currentOrderId}`, 'success');
-                        document.getElementById('editOrderId').value = currentOrderId;
-                    } else {
-                        showMessage('❌ JSONP save failed: ' + result.error, 'error');
-                    }
-                    
-                    // Cleanup
-                    document.body.removeChild(script);
-                    delete window[callbackName];
-                    showLoading(false);
-                };
-                
-                // Create request URL with JSONP callback
-                const params = new URLSearchParams({
-                    action: 'saveOrder',
-                    data: JSON.stringify(orderData),
-                    callback: callbackName
-                });
-                
-                script.src = `${SCRIPT_URL}?${params.toString()}`;
-                script.onerror = function() {
-                    debugLog('❌ JSONP script loading failed');
-                    showMessage('❌ JSONP method failed', 'error');
-                    document.body.removeChild(script);
-                    delete window[callbackName];
-                    showLoading(false);
-                };
-                
-                document.body.appendChild(script);
-                
-                // Timeout after 30 seconds
-                setTimeout(() => {
-                    if (window[callbackName]) {
-                        debugLog('⏰ JSONP request timeout');
-                        showMessage('⏰ Request timeout - please try again', 'error');
-                        document.body.removeChild(script);
-                        delete window[callbackName];
-                        showLoading(false);
-                    }
-                }, 30000);
-                
-            } catch (error) {
-                debugLog(`❌ JSONP method error: ${error.message}`);
-                showMessage('❌ JSONP method error: ' + error.message, 'error');
-                showLoading(false);
-            }
-        }
-
-        // Test CORS with JSONP
-        async function testCORSWithJSONP() {
-            debugLog('🔧 Testing CORS bypass with JSONP...');
-            
-            const callbackName = 'testCallback_' + Date.now();
-            const script = document.createElement('script');
-            
-            window[callbackName] = function(result) {
-                debugLog(`✅ JSONP test successful: ${JSON.stringify(result)}`);
-                showMessage('✅ JSONP method works! This can be used as backup.', 'success');
-                document.body.removeChild(script);
-                delete window[callbackName];
-            };
-            
-            script.onerror = function() {
-                debugLog('❌ JSONP test failed');
-                showMessage('❌ JSONP test failed', 'error');
-                document.body.removeChild(script);
-                delete window[callbackName];
-            };
-            
-            const params = new URLSearchParams({
-                action: 'getMasterData',
-                callback: callbackName
-            });
-            
-            script.src = `${SCRIPT_URL}?${params.toString()}`;
-            document.body.appendChild(script);
         }
 
         function populateCustomerDropdown() {
@@ -754,7 +880,6 @@
                 itemRow.querySelector('.price').value = price;
                 itemRow.querySelector('.item-total').value = total;
                 
-                // Visual feedback
                 itemRow.querySelector('.price').style.backgroundColor = '#e8f5e8';
                 itemRow.querySelector('.item-total').style.backgroundColor = '#e8f5e8';
             } else {
@@ -777,81 +902,9 @@
             document.getElementById('totalAmount').textContent = `₹${total}`;
         }
 
-        async function saveOrder() {
-            if (!validateForm()) return;
-            
-            debugLog('💾 Starting save order process...');
-            showLoading(true);
-            
-            try {
-                const orderData = collectOrderData();
-                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
-                
-                const requestBody = {
-                    action: isEditMode ? 'updateOrder' : 'saveOrder',
-                    data: orderData
-                };
-                
-                debugLog(`📡 Sending POST request to: ${SCRIPT_URL}`);
-                debugLog(`📡 Request body: ${JSON.stringify(requestBody)}`);
-                
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    credentials: 'omit',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-                
-                debugLog(`📡 Response status: ${response.status} ${response.statusText}`);
-                debugLog(`📡 Response headers: ${JSON.stringify([...response.headers.entries()])}`);
-                debugLog(`📡 Response type: ${response.type}`);
-                debugLog(`📡 Response URL: ${response.url}`);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    debugLog(`❌ Response error: ${errorText}`);
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-                const result = await response.json();
-                debugLog(`📡 Response data: ${JSON.stringify(result)}`);
-                
-                if (result.success) {
-                    currentOrderId = result.orderId;
-                    showMessage(`✅ Order ${isEditMode ? 'updated' : 'saved'} successfully!\n🆔 Order ID: ${currentOrderId}\n💡 Use this ID to edit the order later`, 'success');
-                    if (!isEditMode) {
-                        document.getElementById('editOrderId').value = currentOrderId;
-                    }
-                    debugLog(`✅ Order saved successfully: ${currentOrderId}`);
-                } else {
-                    throw new Error(result.error || 'Unknown error from server');
-                }
-                
-            } catch (error) {
-                debugLog(`❌ Save order failed: ${error.name} - ${error.message}`);
-                console.error('Save order error:', error);
-                
-                let errorMessage = 'Error saving order: ';
-                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                    errorMessage += 'Network connectivity issue. ';
-                    errorMessage += 'Try the JSONP save method instead (second save button).';
-                } else {
-                    errorMessage += error.message;
-                }
-                
-                showMessage(errorMessage, 'error');
-            }
-            
-            showLoading(false);
-        }
-
         async function generateInvoice() {
             if (!currentOrderId) {
-                await saveOrder();
+                await saveOrderForm();
                 if (!currentOrderId) {
                     showMessage('Please save the order first before generating invoice', 'error');
                     return;
@@ -1014,7 +1067,7 @@
             });
             
             if (!hasValidItems) {
-                showMessage('Please add at least one valid item with type and service selected', 'error');
+                showMessage('Please add at least one valid item', 'error');
                 return false;
             }
             
@@ -1040,44 +1093,11 @@
             document.getElementById('loading').style.display = show ? 'block' : 'none';
         }
 
-        function quickJSONPTest() {
-    debugLog('🔧 Testing simple JSONP...');
-    
-    // Create simple callback
-    window.testCallback = function(result) {
-        debugLog('✅ JSONP SUCCESS: ' + JSON.stringify(result).substring(0, 100));
-        showMessage('✅ JSONP works! Now try the JSONP save.', 'success');
-        delete window.testCallback;
-    };
-    
-    // Create script
-    const script = document.createElement('script');
-    script.src = SCRIPT_URL + '?action=getMasterData&callback=testCallback&_=' + Date.now();
-    script.onerror = () => {
-        debugLog('❌ JSONP script failed to load');
-        showMessage('❌ JSONP failed', 'error');
-        delete window.testCallback;
-    };
-    
-    document.head.appendChild(script);
-    
-    setTimeout(() => {
-        if (window.testCallback) {
-            debugLog('⏰ JSONP timeout');
-            delete window.testCallback;
-        }
-        if (script.parentNode) {
-            document.head.removeChild(script);
-        }
-    }, 5000);
-}
-        
         function showMessage(message, type) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
             
-            // Handle multi-line messages
             if (message.includes('\n')) {
                 const lines = message.split('\n');
                 lines.forEach((line, index) => {
@@ -1106,11 +1126,10 @@
                 populateCustomerDropdown();
                 document.getElementById('customerName').value = newCustomer;
                 this.value = '';
-                showMessage(`✅ New customer "${newCustomer}" added successfully!`, 'success');
+                showMessage(`✅ New customer "${newCustomer}" added!`, 'success');
             }
         });
 
-        // Auto-calculate when entering new customer name
         document.getElementById('newCustomer').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
