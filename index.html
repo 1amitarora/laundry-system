@@ -588,11 +588,11 @@
             debugLog('⚠️ Using fallback demo data');
         }
 
-        // Fixed Save Order Function (back to working method)
+        // Fixed Save Order Function (using the working method from your original HTML)
         function saveOrder() {
             if (!validateForm()) return;
             
-            debugLog('💾 Using form submission with new tab verification...');
+            debugLog('📝 Using form submission with new tab verification...');
             showLoading(true);
             
             try {
@@ -630,42 +630,185 @@
                 form.submit();
                 document.body.removeChild(form);
                 
-                // Generate probable Order ID as backup
-                const timestamp = new Date();
-                const year = timestamp.getFullYear().toString().substr(-2);
-                const month = String(timestamp.getMonth() + 1).padStart(2, '0');
-                const day = String(timestamp.getDate()).padStart(2, '0');
-                const time = timestamp.getTime().toString().substr(-4);
-                const probableOrderId = `LD${year}${month}${day}${time}`;
-                
-                // Show instructions to user with automatic Order ID capture
-                showMessage(`📝 Order submitted successfully!\n\n🔗 A new tab opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n\n📋 COPY THE ORDER ID from the new tab result!\n\n💡 After copying the Order ID:\n1. Paste it in the field below\n2. Click "📄 Generate Invoice"\n\n⚠️ If popup was blocked, try again`, 'success');
+                // Show instructions to user
+                showMessage(`📝 Order submitted successfully!\n\n🔗 A new tab opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new tab\n💡 Use that Order ID for editing or invoice generation\n\n⚠️ If popup was blocked, try again or use a different save method`, 'success');
                 debugLog('✅ Form submitted in new tab - user can see result directly');
                 
-                // Auto-set estimated Order ID and show it
-                currentOrderId = probableOrderId;
-                updateOrderStatus(probableOrderId + ' (estimated)');
-                
-                // Offer to set the correct Order ID
+                // Auto-prompt for Order ID after 3 seconds
                 setTimeout(() => {
-                    if (currentOrderId === probableOrderId) {
-                        const correctOrderId = prompt(`📋 Please enter the correct Order ID from the new tab:\n\n(If you see {"success":true,"orderId":"LD25062812345"}, \nenter just the ID part: LD25062812345)\n\nOr press Cancel to use estimated ID: ${probableOrderId}`);
-                        
-                        if (correctOrderId && correctOrderId.trim() && correctOrderId !== probableOrderId) {
-                            const cleanOrderId = correctOrderId.trim().replace(/['"]/g, '');
-                            currentOrderId = cleanOrderId;
-                            updateOrderStatus(cleanOrderId);
-                            showMessage(`✅ Order ID updated: ${cleanOrderId}\n📄 You can now generate the invoice!`, 'success');
-                            debugLog(`✅ Order ID manually set: ${cleanOrderId}`);
-                        }
+                    const userOrderId = prompt('📋 Please copy and paste the Order ID from the new tab:\n\n(Look for "orderId":"LD25062812345" and copy just the ID part)\n\nExample: LD25062812345');
+                    
+                    if (userOrderId && userOrderId.trim()) {
+                        const cleanOrderId = userOrderId.trim().replace(/['"]/g, '');
+                        currentOrderId = cleanOrderId;
+                        updateOrderStatus(cleanOrderId);
+                        showMessage(`✅ Order ID set: ${cleanOrderId}\n📄 You can now generate invoices!`, 'success');
+                        debugLog(`✅ Order ID manually set: ${cleanOrderId}`);
                     }
-                }, 5000);
+                }, 3000);
                 
                 showLoading(false);
                 
             } catch (error) {
                 debugLog(`❌ Form submission error: ${error.message}`);
                 showMessage('Error submitting form: ' + error.message, 'error');
+                showLoading(false);
+            }
+        }
+
+        // Alternative save methods from your working HTML
+        function saveOrderFormWithVerification() {
+            return saveOrder(); // Use the main save function
+        }
+
+        function saveOrderForm() {
+            if (!validateForm()) return;
+            
+            debugLog('📝 Using hidden form submission...');
+            showLoading(true);
+            
+            try {
+                const orderData = collectOrderData();
+                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
+                
+                // Create form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = SCRIPT_URL;
+                form.target = 'response-frame-' + Date.now();
+                form.style.display = 'none';
+                
+                // Add action field
+                const actionField = document.createElement('input');
+                actionField.type = 'hidden';
+                actionField.name = 'action';
+                actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
+                form.appendChild(actionField);
+                
+                // Add data field - corrected!
+                const dataField = document.createElement('input');
+                dataField.type = 'hidden';
+                dataField.name = 'data';
+                dataField.value = JSON.stringify(orderData); // Just the order data
+                form.appendChild(dataField);
+                
+                // Create iframe to catch response
+                const iframe = document.createElement('iframe');
+                iframe.name = form.target;
+                iframe.id = form.target;
+                iframe.style.display = 'none';
+                iframe.onload = function() {
+                    // Try to read the response from iframe
+                    try {
+                        setTimeout(() => {
+                            let responseText = '';
+                            try {
+                                responseText = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
+                                debugLog(`📡 iframe response: ${responseText}`);
+                                
+                                if (responseText) {
+                                    const result = JSON.parse(responseText);
+                                    if (result.success) {
+                                        currentOrderId = result.orderId;
+                                        updateOrderStatus(result.orderId);
+                                        showMessage(`✅ Order saved successfully!\n🆔 Order ID: ${result.orderId}\n📋 Use this ID for editing or invoice generation`, 'success');
+                                        if (!isEditMode) {
+                                            document.getElementById('editOrderId').value = result.orderId;
+                                        }
+                                        debugLog(`✅ Order saved: ${result.orderId}`);
+                                    } else {
+                                        showMessage('❌ Order save failed: ' + (result.error || 'Unknown error'), 'error');
+                                    }
+                                }
+                            } catch (parseError) {
+                                debugLog(`⚠️ Could not read iframe response: ${parseError.message}`);
+                                // Fall back to estimated order ID
+                                const timestamp = new Date();
+                                const year = timestamp.getFullYear().toString().substr(-2);
+                                const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+                                const day = String(timestamp.getDate()).padStart(2, '0');
+                                const time = timestamp.getTime().toString().substr(-4);
+                                const probableOrderId = `LD${year}${month}${day}${time}`;
+                                
+                                currentOrderId = probableOrderId;
+                                updateOrderStatus(probableOrderId + ' (estimated)');
+                                showMessage(`✅ Order submitted successfully!\n🆔 Estimated Order ID: ${probableOrderId}\n💡 Check your Google Sheet for the actual ID\n📋 The order should appear in your sheet within a few seconds`, 'success');
+                                if (!isEditMode) {
+                                    document.getElementById('editOrderId').value = probableOrderId;
+                                }
+                            }
+                            
+                            showLoading(false);
+                            
+                            // Clean up
+                            setTimeout(() => {
+                                if (iframe.parentNode) {
+                                    document.body.removeChild(iframe);
+                                }
+                            }, 1000);
+                            
+                        }, 2000);
+                    } catch (error) {
+                        debugLog(`❌ iframe processing error: ${error.message}`);
+                        showLoading(false);
+                    }
+                };
+                
+                document.body.appendChild(iframe);
+                
+                // Submit form
+                document.body.appendChild(form);
+                debugLog('📡 Submitting form silently...');
+                form.submit();
+                
+                // Clean up form
+                setTimeout(() => {
+                    if (form.parentNode) document.body.removeChild(form);
+                }, 1000);
+                
+            } catch (error) {
+                debugLog(`❌ Form submission error: ${error.message}`);
+                showMessage('Error submitting form: ' + error.message, 'error');
+                showLoading(false);
+            }
+        }
+
+        function saveOrderGET() {
+            if (!validateForm()) return;
+            
+            debugLog('📝 Using GET method with URL parameters...');
+            showLoading(true);
+            
+            try {
+                const orderData = collectOrderData();
+                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
+                
+                // Build URL with parameters - note: just pass orderData, not wrapped
+                const params = new URLSearchParams({
+                    action: isEditMode ? 'updateOrder' : 'saveOrder',
+                    data: JSON.stringify(orderData), // Just the order data
+                    _: Date.now()
+                });
+                
+                const saveUrl = `${SCRIPT_URL}?${params.toString()}`;
+                debugLog(`📡 GET save URL length: ${saveUrl.length}`);
+                
+                // Open in new window
+                const newWindow = window.open(saveUrl, '_blank', 'width=600,height=400,scrollbars=yes');
+                
+                if (newWindow) {
+                    showMessage(`📝 Order save request sent via GET method!\n\n🔗 New window opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new window\n💡 This method works even when other methods fail\n\n⚠️ Close the new window when you're done copying the Order ID`, 'success');
+                    debugLog('✅ GET save opened in new window');
+                } else {
+                    showMessage('❌ Could not open new window. Please disable popup blocker and try again, or use the "Hidden" method instead.', 'error');
+                    debugLog('❌ Popup blocked');
+                }
+                
+                showLoading(false);
+                
+            } catch (error) {
+                debugLog(`❌ GET save error: ${error.message}`);
+                showMessage('Error with GET save: ' + error.message, 'error');
                 showLoading(false);
             }
         }
