@@ -395,6 +395,7 @@
                 <button type="button" class="btn btn-secondary" onclick="saveOrderAlternative()">💾 Save Order (JSONP)</button>
                 <button type="button" class="btn btn-primary" onclick="clearForm()">🗑️ Clear Form</button>
                 <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">✏️ Edit Existing Order</button>
+                <button type="button" class="btn btn-secondary" onclick="quickJSONPTest()">🔧 Quick JSONP Test</button>
             </div>
 
             <!-- Loading Section -->
@@ -408,6 +409,8 @@
         </div>
     </div>
 
+
+    
     <script>
         // Configuration - Replace with your Google Apps Script Web App URL
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxU-O-i_ROz9ZdSXzZWHQMqhmyU7_OtFnCRZK3jqvjdRdF9X1PSLfNlJyJbOGkRHkGR/exec';
@@ -1037,6 +1040,38 @@
             document.getElementById('loading').style.display = show ? 'block' : 'none';
         }
 
+        function quickJSONPTest() {
+    debugLog('🔧 Testing simple JSONP...');
+    
+    // Create simple callback
+    window.testCallback = function(result) {
+        debugLog('✅ JSONP SUCCESS: ' + JSON.stringify(result).substring(0, 100));
+        showMessage('✅ JSONP works! Now try the JSONP save.', 'success');
+        delete window.testCallback;
+    };
+    
+    // Create script
+    const script = document.createElement('script');
+    script.src = SCRIPT_URL + '?action=getMasterData&callback=testCallback&_=' + Date.now();
+    script.onerror = () => {
+        debugLog('❌ JSONP script failed to load');
+        showMessage('❌ JSONP failed', 'error');
+        delete window.testCallback;
+    };
+    
+    document.head.appendChild(script);
+    
+    setTimeout(() => {
+        if (window.testCallback) {
+            debugLog('⏰ JSONP timeout');
+            delete window.testCallback;
+        }
+        if (script.parentNode) {
+            document.head.removeChild(script);
+        }
+    }, 5000);
+}
+        
         function showMessage(message, type) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
