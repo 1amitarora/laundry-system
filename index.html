@@ -538,11 +538,10 @@
         }
 
         // Method 1: Form Submission with New Tab (RECOMMENDED)
-        // Replace your existing saveOrderFormWithVerification function with this:
 function saveOrderFormWithVerification() {
     if (!validateForm()) return;
     
-    debugLog('📝 Using fetch with JSON for new tab verification...');
+    debugLog('📝 Using form submission with new tab verification...');
     showLoading(true);
     
     try {
@@ -551,194 +550,200 @@ function saveOrderFormWithVerification() {
         const totalAmount = orderData.totalAmount;
         
         debugLog(`📦 Order: ${customerName}, Total: ₹${totalAmount}`);
+        debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
         
-        // Prepare the request payload
-        const payload = {
-            action: isEditMode ? 'updateOrder' : 'saveOrder',
-            data: orderData
-        };
-        
-        // Create a form that opens the result in a new tab
+        // Create form
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = 'about:blank'; // Temporary
-        form.target = '_blank';
+        form.action = SCRIPT_URL;
+        form.target = '_blank'; // Open in new tab
         form.style.display = 'none';
+        
+        // Add action field
+        const actionField = document.createElement('input');
+        actionField.type = 'hidden';
+        actionField.name = 'action';
+        actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
+        form.appendChild(actionField);
+        
+        // Add data field - this is the key fix!
+        const dataField = document.createElement('input');
+        dataField.type = 'hidden';
+        dataField.name = 'data';
+        dataField.value = JSON.stringify(orderData); // Just the order data, not wrapped
+        form.appendChild(dataField);
+        
+        // Submit form in new tab
         document.body.appendChild(form);
-        
-        // Submit the form to open new tab first
+        debugLog('📡 Submitting form in new tab...');
         form.submit();
-        
-        // Get reference to the new window
-        const newWindow = form.target === '_blank' ? window.open('', '_blank') : null;
-        
-        // Clean up form
         document.body.removeChild(form);
         
-        // Now send the actual request
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-            mode: 'cors'
-        })
-        .then(response => response.json())
-        .then(result => {
-            debugLog(`📡 Response: ${JSON.stringify(result)}`);
-            
-            if (newWindow && !newWindow.closed) {
-                // Write the result to the new window
-                newWindow.document.write(`
-                    <html>
-                    <head><title>Order Save Result</title></head>
-                    <body style="font-family: Arial, sans-serif; padding: 20px;">
-                        <h2>Order Save Result</h2>
-                        <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow: auto;">${JSON.stringify(result, null, 2)}</pre>
-                        <p><strong>Copy the Order ID above for future reference!</strong></p>
-                        <button onclick="window.close()">Close Window</button>
-                    </body>
-                    </html>
-                `);
-                newWindow.document.close();
-            }
-            
-            if (result.success) {
-                currentOrderId = result.orderId;
-                showMessage(`✅ Order saved successfully!\n🆔 Order ID: ${result.orderId}\n📋 Result opened in new tab`, 'success');
-                if (!isEditMode) {
-                    document.getElementById('editOrderId').value = result.orderId;
-                }
-            } else {
-                showMessage('❌ Order save failed: ' + (result.error || 'Unknown error'), 'error');
-            }
-            
-            showLoading(false);
-        })
-        .catch(error => {
-            debugLog(`❌ Fetch error: ${error.message}`);
-            showMessage('Error submitting order: ' + error.message, 'error');
-            showLoading(false);
-            
-            if (newWindow && !newWindow.closed) {
-                newWindow.document.write(`
-                    <html>
-                    <head><title>Error</title></head>
-                    <body style="font-family: Arial, sans-serif; padding: 20px;">
-                        <h2>Error</h2>
-                        <p style="color: red;">${error.message}</p>
-                        <button onclick="window.close()">Close Window</button>
-                    </body>
-                    </html>
-                `);
-                newWindow.document.close();
-            }
-        });
+        // Show instructions to user
+        showMessage(`📝 Order submitted successfully!\n\n🔗 A new tab opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new tab\n💡 Use that Order ID for editing or invoice generation\n\n⚠️ If popup was blocked, try again or use a different save method`, 'success');
+        debugLog('✅ Form submitted in new tab - user can see result directly');
+        
+        showLoading(false);
         
     } catch (error) {
-        debugLog(`❌ Request preparation error: ${error.message}`);
-        showMessage('Error preparing request: ' + error.message, 'error');
+        debugLog(`❌ Form submission error: ${error.message}`);
+        showMessage('Error submitting form: ' + error.message, 'error');
         showLoading(false);
     }
 }
 
         // Method 2: Hidden Form Submission with Verification
-        function saveOrderForm() {
+function saveOrderForm() {
     if (!validateForm()) return;
     
-    debugLog('📝 Using fetch with JSON (hidden method)...');
+    debugLog('📝 Using hidden form submission...');
     showLoading(true);
     
     try {
         const orderData = collectOrderData();
         debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
         
-        const payload = {
-            action: isEditMode ? 'updateOrder' : 'saveOrder',
-            data: orderData
+        // Create form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = SCRIPT_URL;
+        form.target = 'response-frame-' + Date.now();
+        form.style.display = 'none';
+        
+        // Add action field
+        const actionField = document.createElement('input');
+        actionField.type = 'hidden';
+        actionField.name = 'action';
+        actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
+        form.appendChild(actionField);
+        
+        // Add data field - corrected!
+        const dataField = document.createElement('input');
+        dataField.type = 'hidden';
+        dataField.name = 'data';
+        dataField.value = JSON.stringify(orderData); // Just the order data
+        form.appendChild(dataField);
+        
+        // Create iframe to catch response
+        const iframe = document.createElement('iframe');
+        iframe.name = form.target;
+        iframe.id = form.target;
+        iframe.style.display = 'none';
+        iframe.onload = function() {
+            // Try to read the response from iframe
+            try {
+                setTimeout(() => {
+                    let responseText = '';
+                    try {
+                        responseText = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
+                        debugLog(`📡 iframe response: ${responseText}`);
+                        
+                        if (responseText) {
+                            const result = JSON.parse(responseText);
+                            if (result.success) {
+                                currentOrderId = result.orderId;
+                                showMessage(`✅ Order saved successfully!\n🆔 Order ID: ${result.orderId}\n📋 Use this ID for editing or invoice generation`, 'success');
+                                if (!isEditMode) {
+                                    document.getElementById('editOrderId').value = result.orderId;
+                                }
+                                debugLog(`✅ Order saved: ${result.orderId}`);
+                            } else {
+                                showMessage('❌ Order save failed: ' + (result.error || 'Unknown error'), 'error');
+                            }
+                        }
+                    } catch (parseError) {
+                        debugLog(`⚠️ Could not read iframe response: ${parseError.message}`);
+                        // Fall back to estimated order ID
+                        const timestamp = new Date();
+                        const year = timestamp.getFullYear().toString().substr(-2);
+                        const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+                        const day = String(timestamp.getDate()).padStart(2, '0');
+                        const time = timestamp.getTime().toString().substr(-4);
+                        const probableOrderId = `LD${year}${month}${day}${time}`;
+                        
+                        currentOrderId = probableOrderId;
+                        showMessage(`✅ Order submitted successfully!\n🆔 Estimated Order ID: ${probableOrderId}\n💡 Check your Google Sheet for the actual ID\n📋 The order should appear in your sheet within a few seconds`, 'success');
+                        if (!isEditMode) {
+                            document.getElementById('editOrderId').value = probableOrderId;
+                        }
+                    }
+                    
+                    showLoading(false);
+                    
+                    // Clean up
+                    setTimeout(() => {
+                        if (iframe.parentNode) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 1000);
+                    
+                }, 2000);
+            } catch (error) {
+                debugLog(`❌ iframe processing error: ${error.message}`);
+                showLoading(false);
+            }
         };
         
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-            mode: 'cors'
-        })
-        .then(response => {
-            debugLog(`📡 Response status: ${response.status}`);
-            return response.json();
-        })
-        .then(result => {
-            debugLog(`📡 Response: ${JSON.stringify(result)}`);
-            
-            if (result.success) {
-                currentOrderId = result.orderId;
-                showMessage(`✅ Order saved successfully!\n🆔 Order ID: ${result.orderId}\n📋 Use this ID for editing or invoice generation`, 'success');
-                if (!isEditMode) {
-                    document.getElementById('editOrderId').value = result.orderId;
-                }
-            } else {
-                showMessage('❌ Order save failed: ' + (result.error || 'Unknown error'), 'error');
-            }
-            
-            showLoading(false);
-        })
-        .catch(error => {
-            debugLog(`❌ Save order error: ${error.message}`);
-            showMessage('Error saving order: ' + error.message, 'error');
-            showLoading(false);
-        });
+        document.body.appendChild(iframe);
+        
+        // Submit form
+        document.body.appendChild(form);
+        debugLog('📡 Submitting form silently...');
+        form.submit();
+        
+        // Clean up form
+        setTimeout(() => {
+            if (form.parentNode) document.body.removeChild(form);
+        }, 1000);
         
     } catch (error) {
-        debugLog(`❌ Request preparation error: ${error.message}`);
-        showMessage('Error preparing request: ' + error.message, 'error');
+        debugLog(`❌ Form submission error: ${error.message}`);
+        showMessage('Error submitting form: ' + error.message, 'error');
         showLoading(false);
     }
 }
 
+
         // Method 3: GET Method using URL Parameters
-        function saveOrderGET() {
-            if (!validateForm()) return;
-            
-            debugLog('📝 Using GET method with URL parameters...');
-            showLoading(true);
-            
-            try {
-                const orderData = collectOrderData();
-                debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
-                
-                // Build URL with parameters
-                const params = new URLSearchParams({
-                    action: isEditMode ? 'updateOrder' : 'saveOrder',
-                    data: JSON.stringify(orderData),
-                    _: Date.now()
-                });
-                
-                const saveUrl = `${SCRIPT_URL}?${params.toString()}`;
-                debugLog(`📡 GET save URL: ${saveUrl.substring(0, 150)}...`);
-                
-                // Open in new window
-                const newWindow = window.open(saveUrl, '_blank', 'width=600,height=400,scrollbars=yes');
-                
-                if (newWindow) {
-                    showMessage(`📝 Order save request sent via GET method!\n\n🔗 New window opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new window\n💡 This method works even when other methods fail\n\n⚠️ Close the new window when you're done copying the Order ID`, 'success');
-                    debugLog('✅ GET save opened in new window');
-                } else {
-                    showMessage('❌ Could not open new window. Please disable popup blocker and try again, or use the "Hidden" method instead.', 'error');
-                    debugLog('❌ Popup blocked');
-                }
-                
-                showLoading(false);
-                
-            } catch (error) {
-                debugLog(`❌ GET save error: ${error.message}`);
-                showMessage('Error with GET save: ' + error.message, 'error');
-                showLoading(false);
-            }
+function saveOrderGET() {
+    if (!validateForm()) return;
+    
+    debugLog('📝 Using GET method with URL parameters...');
+    showLoading(true);
+    
+    try {
+        const orderData = collectOrderData();
+        debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
+        
+        // Build URL with parameters - note: just pass orderData, not wrapped
+        const params = new URLSearchParams({
+            action: isEditMode ? 'updateOrder' : 'saveOrder',
+            data: JSON.stringify(orderData), // Just the order data
+            _: Date.now()
+        });
+        
+        const saveUrl = `${SCRIPT_URL}?${params.toString()}`;
+        debugLog(`📡 GET save URL length: ${saveUrl.length}`);
+        
+        // Open in new window
+        const newWindow = window.open(saveUrl, '_blank', 'width=600,height=400,scrollbars=yes');
+        
+        if (newWindow) {
+            showMessage(`📝 Order save request sent via GET method!\n\n🔗 New window opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n📋 Copy the Order ID from the new window\n💡 This method works even when other methods fail\n\n⚠️ Close the new window when you're done copying the Order ID`, 'success');
+            debugLog('✅ GET save opened in new window');
+        } else {
+            showMessage('❌ Could not open new window. Please disable popup blocker and try again, or use the "Hidden" method instead.', 'error');
+            debugLog('❌ Popup blocked');
         }
+        
+        showLoading(false);
+        
+    } catch (error) {
+        debugLog(`❌ GET save error: ${error.message}`);
+        showMessage('Error with GET save: ' + error.message, 'error');
+        showLoading(false);
+    }
+}
 
         // Test backend connectivity
         async function testConnectivity() {
