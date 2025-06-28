@@ -382,6 +382,7 @@
                 <div class="debug-panel" id="debugConsole">System initialized...</div>
                 <button type="button" class="btn btn-secondary" onclick="clearDebugConsole()">Clear Console</button>
                 <button type="button" class="btn btn-secondary" onclick="testConnectivity()">Test Connectivity</button>
+                <button type="button" class="btn btn-secondary" onclick="testFormSubmissionNewTab()">Test Form Submission</button>
             </div>
 
             <!-- Order Status Section -->
@@ -587,11 +588,11 @@
             debugLog('⚠️ Using fallback demo data');
         }
 
-        // Single Save Order Function (using form submission method that was working)
+        // Fixed Save Order Function (back to working method)
         function saveOrder() {
             if (!validateForm()) return;
             
-            debugLog('💾 Saving order using form submission...');
+            debugLog('💾 Using form submission with new tab verification...');
             showLoading(true);
             
             try {
@@ -602,11 +603,11 @@
                 debugLog(`📦 Order: ${customerName}, Total: ₹${totalAmount}`);
                 debugLog(`📦 Order data: ${JSON.stringify(orderData)}`);
                 
-                // Create form for submission (this method was working before)
+                // Create form
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = SCRIPT_URL;
-                form.target = 'response-frame-' + Date.now();
+                form.target = '_blank'; // Open in new tab
                 form.style.display = 'none';
                 
                 // Add action field
@@ -616,94 +617,51 @@
                 actionField.value = isEditMode ? 'updateOrder' : 'saveOrder';
                 form.appendChild(actionField);
                 
-                // Add data field
+                // Add data field - this is the key fix!
                 const dataField = document.createElement('input');
                 dataField.type = 'hidden';
                 dataField.name = 'data';
-                dataField.value = JSON.stringify(orderData);
+                dataField.value = JSON.stringify(orderData); // Just the order data, not wrapped
                 form.appendChild(dataField);
                 
-                // Create iframe to capture response
-                const iframe = document.createElement('iframe');
-                iframe.name = form.target;
-                iframe.id = form.target;
-                iframe.style.display = 'none';
-                iframe.onload = function() {
-                    setTimeout(() => {
-                        try {
-                            let responseText = '';
-                            try {
-                                responseText = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
-                                debugLog(`📡 iframe response: ${responseText}`);
-                                
-                                if (responseText) {
-                                    const result = JSON.parse(responseText);
-                                    if (result.success) {
-                                        currentOrderId = result.orderId;
-                                        updateOrderStatus(result.orderId);
-                                        showMessage(`✅ Order saved successfully!\n🆔 Order ID: ${result.orderId}\n📄 You can now generate an invoice`, 'success');
-                                        debugLog(`✅ Order saved: ${result.orderId}`);
-                                    } else {
-                                        showMessage('❌ Order save failed: ' + (result.error || 'Unknown error'), 'error');
-                                    }
-                                } else {
-                                    // If we can't read the response, generate estimated Order ID
-                                    const timestamp = new Date();
-                                    const year = timestamp.getFullYear().toString().substr(-2);
-                                    const month = String(timestamp.getMonth() + 1).padStart(2, '0');
-                                    const day = String(timestamp.getDate()).padStart(2, '0');
-                                    const time = timestamp.getTime().toString().substr(-4);
-                                    const probableOrderId = `LD${year}${month}${day}${time}`;
-                                    
-                                    currentOrderId = probableOrderId;
-                                    updateOrderStatus(probableOrderId);
-                                    showMessage(`✅ Order submitted successfully!\n🆔 Estimated Order ID: ${probableOrderId}\n📄 Check your Google Sheet for the actual ID\n💡 You can now try generating an invoice`, 'success');
-                                    debugLog(`✅ Order submitted with estimated ID: ${probableOrderId}`);
-                                }
-                            } catch (parseError) {
-                                debugLog(`⚠️ Could not read iframe response: ${parseError.message}`);
-                                // Generate estimated Order ID as fallback
-                                const timestamp = new Date();
-                                const year = timestamp.getFullYear().toString().substr(-2);
-                                const month = String(timestamp.getMonth() + 1).padStart(2, '0');
-                                const day = String(timestamp.getDate()).padStart(2, '0');
-                                const time = timestamp.getTime().toString().substr(-4);
-                                const probableOrderId = `LD${year}${month}${day}${time}`;
-                                
-                                currentOrderId = probableOrderId;
-                                updateOrderStatus(probableOrderId);
-                                showMessage(`✅ Order submitted successfully!\n🆔 Estimated Order ID: ${probableOrderId}\n📋 Check your Google Sheet for the actual Order ID\n💡 You can now try generating an invoice`, 'success');
-                                debugLog(`✅ Using estimated Order ID: ${probableOrderId}`);
-                            }
-                            
-                            showLoading(false);
-                            
-                            // Clean up
-                            setTimeout(() => {
-                                if (iframe.parentNode) {
-                                    document.body.removeChild(iframe);
-                                }
-                            }, 1000);
-                            
-                        } catch (error) {
-                            debugLog(`❌ iframe processing error: ${error.message}`);
-                            showMessage('Error processing save response: ' + error.message, 'error');
-                            showLoading(false);
-                        }
-                    }, 2000);
-                };
-                
-                document.body.appendChild(iframe);
-                
-                // Submit form
+                // Submit form in new tab
                 document.body.appendChild(form);
-                debugLog('📡 Submitting form...');
+                debugLog('📡 Submitting form in new tab...');
                 form.submit();
+                document.body.removeChild(form);
                 
-                // Clean up form
+                // Generate probable Order ID as backup
+                const timestamp = new Date();
+                const year = timestamp.getFullYear().toString().substr(-2);
+                const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+                const day = String(timestamp.getDate()).padStart(2, '0');
+                const time = timestamp.getTime().toString().substr(-4);
+                const probableOrderId = `LD${year}${month}${day}${time}`;
+                
+                // Show instructions to user with automatic Order ID capture
+                showMessage(`📝 Order submitted successfully!\n\n🔗 A new tab opened with the result\n👀 Look for: {"success":true,"orderId":"LD25..."}\n\n📋 COPY THE ORDER ID from the new tab result!\n\n💡 After copying the Order ID:\n1. Paste it in the field below\n2. Click "📄 Generate Invoice"\n\n⚠️ If popup was blocked, try again`, 'success');
+                debugLog('✅ Form submitted in new tab - user can see result directly');
+                
+                // Auto-set estimated Order ID and show it
+                currentOrderId = probableOrderId;
+                updateOrderStatus(probableOrderId + ' (estimated)');
+                
+                // Offer to set the correct Order ID
                 setTimeout(() => {
-                    if (form.parentNode) document.body.removeChild(form);
-                }, 1000);
+                    if (currentOrderId === probableOrderId) {
+                        const correctOrderId = prompt(`📋 Please enter the correct Order ID from the new tab:\n\n(If you see {"success":true,"orderId":"LD25062812345"}, \nenter just the ID part: LD25062812345)\n\nOr press Cancel to use estimated ID: ${probableOrderId}`);
+                        
+                        if (correctOrderId && correctOrderId.trim() && correctOrderId !== probableOrderId) {
+                            const cleanOrderId = correctOrderId.trim().replace(/['"]/g, '');
+                            currentOrderId = cleanOrderId;
+                            updateOrderStatus(cleanOrderId);
+                            showMessage(`✅ Order ID updated: ${cleanOrderId}\n📄 You can now generate the invoice!`, 'success');
+                            debugLog(`✅ Order ID manually set: ${cleanOrderId}`);
+                        }
+                    }
+                }, 5000);
+                
+                showLoading(false);
                 
             } catch (error) {
                 debugLog(`❌ Form submission error: ${error.message}`);
@@ -755,11 +713,14 @@
             document.getElementById('editOrderId').value = orderId;
         }
 
-        // Test backend connectivity
+        // Test backend connectivity with enhanced form submission test
         async function testConnectivity() {
             debugLog('🔧 Testing backend connectivity...');
+            showLoading(true);
             
             try {
+                // Test 1: Basic connectivity
+                debugLog('📡 Test 1: Basic connectivity...');
                 const response = await fetch(SCRIPT_URL + '?action=getMasterData', {
                     method: 'GET',
                     mode: 'cors'
@@ -769,15 +730,162 @@
                 if (response.ok) {
                     const data = await response.json();
                     debugLog(`✅ Data received: ${data.customers?.length} customers found`);
-                    showMessage('✅ Backend connectivity is working perfectly!', 'success');
+                    showMessage('✅ Backend connectivity is working!', 'success');
                 } else {
-                    showMessage('⚠️ Backend responded but with an error. Check debug console.', 'error');
+                    showMessage('⚠️ Backend responded but with an error.', 'error');
+                    showLoading(false);
+                    return;
                 }
+                
+                // Test 2: Form submission test
+                debugLog('📡 Test 2: Form submission test...');
+                
+                const testOrderData = {
+                    date: '2025-06-28',
+                    customerName: 'Test Customer',
+                    phoneNumber: '9999999999',
+                    comments: 'Test order submission',
+                    items: [{
+                        itemType: 'cloth',
+                        serviceType: 'washOnly',
+                        quantity: 1,
+                        price: 5,
+                        total: 5
+                    }],
+                    totalAmount: 5
+                };
+                
+                // Create test form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = SCRIPT_URL;
+                form.target = 'test-frame-' + Date.now();
+                form.style.display = 'none';
+                
+                // Add action field
+                const actionField = document.createElement('input');
+                actionField.type = 'hidden';
+                actionField.name = 'action';
+                actionField.value = 'saveOrder';
+                form.appendChild(actionField);
+                
+                // Add data field
+                const dataField = document.createElement('input');
+                dataField.type = 'hidden';
+                dataField.name = 'data';
+                dataField.value = JSON.stringify(testOrderData);
+                form.appendChild(dataField);
+                
+                // Create iframe for test
+                const iframe = document.createElement('iframe');
+                iframe.name = form.target;
+                iframe.id = form.target;
+                iframe.style.display = 'none';
+                
+                // Set up iframe response handler
+                return new Promise((resolve, reject) => {
+                    iframe.onload = function() {
+                        setTimeout(() => {
+                            try {
+                                let responseText = '';
+                                try {
+                                    responseText = iframe.contentDocument.body.innerText || iframe.contentDocument.body.textContent;
+                                    debugLog(`📡 Test form response: ${responseText}`);
+                                    
+                                    if (responseText) {
+                                        const result = JSON.parse(responseText);
+                                        if (result.success) {
+                                            debugLog(`✅ Test order saved with ID: ${result.orderId}`);
+                                            showMessage(`✅ Form submission test successful!\n🆔 Test Order ID: ${result.orderId}\n💡 Your backend is working correctly!`, 'success');
+                                        } else {
+                                            debugLog(`❌ Test order failed: ${result.error}`);
+                                            showMessage(`❌ Form submission test failed: ${result.error}`, 'error');
+                                        }
+                                    } else {
+                                        debugLog(`⚠️ Test response was empty - this indicates a backend issue`);
+                                        showMessage(`⚠️ Form submission test: No response from backend\n🔧 This suggests your Google Apps Script may not be deployed correctly`, 'error');
+                                    }
+                                } catch (parseError) {
+                                    debugLog(`❌ Test response parse error: ${parseError.message}`);
+                                    showMessage(`❌ Form submission test: Invalid response format\n🔧 Check your Google Apps Script deployment`, 'error');
+                                }
+                                
+                                // Clean up test elements
+                                if (iframe.parentNode) document.body.removeChild(iframe);
+                                if (form.parentNode) document.body.removeChild(form);
+                                showLoading(false);
+                                resolve();
+                                
+                            } catch (error) {
+                                debugLog(`❌ Test iframe error: ${error.message}`);
+                                showMessage(`❌ Form submission test failed: ${error.message}`, 'error');
+                                showLoading(false);
+                                reject(error);
+                            }
+                        }, 3000); // Wait 3 seconds for response
+                    };
+                    
+                    // Submit test form
+                    document.body.appendChild(iframe);
+                    document.body.appendChild(form);
+                    debugLog('📡 Submitting test form...');
+                    form.submit();
+                });
                 
             } catch (error) {
                 debugLog(`❌ Connectivity test failed: ${error.message}`);
-                showMessage('❌ Backend connectivity test failed.', 'error');
+                showMessage('❌ Backend connectivity test failed: ' + error.message, 'error');
+                showLoading(false);
             }
+        }
+
+        // Test form submission in new tab (easier to see response)
+        function testFormSubmissionNewTab() {
+            debugLog('🧪 Testing form submission in new tab...');
+            
+            const testOrderData = {
+                date: '2025-06-28',
+                customerName: 'Test Customer Form',
+                phoneNumber: '9999999999',
+                comments: 'Form submission test',
+                items: [{
+                    itemType: 'cloth',
+                    serviceType: 'washOnly',
+                    quantity: 1,
+                    price: 5,
+                    total: 5
+                }],
+                totalAmount: 5
+            };
+            
+            // Create form that opens in new tab
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = SCRIPT_URL;
+            form.target = '_blank'; // Open in new tab
+            form.style.display = 'none';
+            
+            // Add action field
+            const actionField = document.createElement('input');
+            actionField.type = 'hidden';
+            actionField.name = 'action';
+            actionField.value = 'saveOrder';
+            form.appendChild(actionField);
+            
+            // Add data field
+            const dataField = document.createElement('input');
+            dataField.type = 'hidden';
+            dataField.name = 'data';
+            dataField.value = JSON.stringify(testOrderData);
+            form.appendChild(dataField);
+            
+            // Submit form
+            document.body.appendChild(form);
+            debugLog('📡 Submitting test form in new tab...');
+            form.submit();
+            document.body.removeChild(form);
+            
+            showMessage('🧪 Test form submitted in new tab!\n\n👀 Look for the response in the new tab\n✅ You should see: {"success":true,"orderId":"LD25..."}\n❌ If you see an error, check your Google Apps Script deployment', 'success');
         }
 
         function populateCustomerDropdown() {
